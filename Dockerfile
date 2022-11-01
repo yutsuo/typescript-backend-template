@@ -1,12 +1,27 @@
-FROM node:current-alpine
+FROM node:current-alpine as builder
 
+# Create app directory
 WORKDIR /app
 
-COPY package.json .
-COPY package-lock.json .
+# Install app dependencies
+COPY package*.json .
 
-RUN npm install --silent
+RUN npm ci
 
-COPY ./dist ./dist
+COPY . .
 
-CMD ["node", "dist/src/index.js"]
+RUN npm run build
+
+FROM node:current-alpine
+
+# Create app directory
+WORKDIR /app
+
+# Install app dependencies
+COPY package*.json .
+
+RUN npm ci --production
+
+COPY --from=builder /app/dist ./dist
+
+CMD [ "node", "dist/index.js" ]
